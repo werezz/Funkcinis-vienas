@@ -2,6 +2,7 @@ module Uzd1
 where
 
 import Data.Bool
+import Data.Char
 
 msg :: String
 --msg ="(l(m\"x\"2\"y\"1\"v\"\"x\")(m\"x\"0\"y\"1\"v\"\"o\")(m\"x\"2\"y\"1\"v\"\"x\"))"
@@ -9,25 +10,25 @@ msg :: String
 msg = "l[m[\"x\";1;\"y\";1;\"v\";\"x\"];m[\"x\";0;\"y\";1;\"v\";\"o\"];m[\"x\";0;\"y\";0;\"v\";\"x\"];m[\"x\";2;\"y\";2;\"v\";\"o\"];m[\"x\";2;\"y\";2;\"v\";\"x\"]]"
 
 data Move = Move {
-    posX :: Int,
-    posY :: Int,
-    z :: Char 
+    pozicijaX :: Int,
+    pozicijaY :: Int,
+    zaidejas :: Char 
 } deriving Show
 
-extractX :: Move -> Int
-extractX (Move x _ _) = x
+gaukX :: Move -> Int
+gaukX (Move x _ _) = x
 
-extractY :: Move -> Int
-extractY (Move _ y _) = y
+gaukY :: Move -> Int
+gaukY (Move _ y _) = y
 
-extractPlayer :: Move -> Char
-extractPlayer (Move _ _ z) = z
+gaukZaideja :: Move -> Char
+gaukZaideja (Move _ _ z) = z
 
-checkMoves :: String -> String
-checkMoves str =
+validate :: String -> String
+validate str =
     let
         (moves) = parse str
-        correstQuantity = checkQuantity (moves)
+        correstQuantity = tikrintiKieki (moves)
     in if (correstQuantity)
         then 
             let 
@@ -43,32 +44,32 @@ isAlignmentCorrect (h:[]) = True
 isAlignmentCorrect (h:t:t1) = 
     let
         deepResult = isAlignmentCorrect (t:t1)
-        result = compareMoves h t
+        result = tikrintiMoves h t
     in
         if ((not result) && deepResult)
         then isAlignmentCorrect (h:t1)
         else False
 
-compareMoves :: Move -> Move -> Bool
-compareMoves move1 move2 = 
-    if (extractX move1 == extractX move2
-        && extractY move1 == extractY move2)
+tikrintiMoves :: Move -> Move -> Bool
+tikrintiMoves move1 move2 = 
+    if (gaukX move1 == gaukX move2
+        && gaukY move1 == gaukY move2)
         then True
         else False
 
-checkQuantity :: [Move] -> Bool
-checkQuantity move =
-    checkQuantity' 0 0 move
+tikrintiKieki :: [Move] -> Bool
+tikrintiKieki move =
+    tikrintiKieki' 0 0 move
     where
-        checkQuantity' :: Int -> Int -> [Move] -> Bool
-        checkQuantity' x y [] = compareQuantity x y
-        checkQuantity' x y (h:t) =
-            if (extractPlayer h == 'x')
-                then checkQuantity' (x + 1) y t
-                else checkQuantity' x (y + 1) t
+        tikrintiKieki' :: Int -> Int -> [Move] -> Bool
+        tikrintiKieki' x y [] = lygintiKieki x y
+        tikrintiKieki' x y (h:t) =
+            if (gaukZaideja h == 'x')
+                then tikrintiKieki' (x + 1) y t
+                else tikrintiKieki' x (y + 1) t
 
-compareQuantity :: Int -> Int -> Bool
-compareQuantity x y = if (abs(x - y) < 2)
+lygintiKieki :: Int -> Int -> Bool
+lygintiKieki x y = if (abs(x - y) < 2)
     then True
     else False
 
@@ -86,7 +87,7 @@ parseMExpressions acc (']':t) = (acc, t)
 parseMExpressions acc (';':t) = parseMExpressions acc t
 parseMExpressions acc mExpressions =
     let
-        (propertyName1, mExpressions1) = readPropertyName mExpressions
+        (propertyName1, mExpressions1) = readSymbol mExpressions
         mExpressions2 = removeSemicolon mExpressions1
         (move, rest) = parseMExpression mExpressions
     in
@@ -98,17 +99,17 @@ parseMExpression mExpression =
         mExpression1 = removeMExpressionPrefix mExpression
         mExpression2 = removeOpeningSquareBracket mExpression1
 
-        (propertyName1, mExpression3) = readPropertyName mExpression2
+        (propertyName1, mExpression3) = readSymbol mExpression2
         mExpression4 = removeSemicolon mExpression3
         (digit1, mExpression5) = readDigit mExpression4
         mExpression6 = removeSemicolon mExpression5
 
-        (propertyName2, mExpression7) = readPropertyName mExpression6
+        (propertyName2, mExpression7) = readSymbol mExpression6
         mExpression8 = removeSemicolon mExpression7
         (digit2, mExpression9) = readDigit mExpression8
         mExpression10 = removeSemicolon mExpression9
 
-        (propertyName3, mExpression11) = readPropertyName mExpression10
+        (propertyName3, mExpression11) = readSymbol mExpression10
         mExpression12 = removeSemicolon mExpression11
         (player, mExpression13) = readPlayer mExpression12
         mExpression14 = removeClosingSquareBracket mExpression13
@@ -148,15 +149,9 @@ removeSemicolon :: String -> String
 removeSemicolon (';':t) = t
 removeSemicolon _ = error "';' expected"
 
-readPropertyName :: String -> (Char, String)
--- readPropertyName ('\"':'x':'\"':t) = ('x', t)
--- readPropertyName ('\"':'X':'\"':t) = ('x', t)
--- readPropertyName ('\"':'y':'\"':t) = ('y', t)
--- readPropertyName ('\"':'Y':'\"':t) = ('y', t)
--- readPropertyName ('\"':'v':'\"':t) = ('v', t)
--- readPropertyName ('\"':'V':'\"':t) = ('v', t)
-readPropertyName ('\"':_:'\"':t) = ('k', t)
-readPropertyName _  = error "Property name expected"
+readSymbol :: String -> (Char, String)
+readSymbol ('\"':_:'\"':t) = ('k', t)
+readSymbol _  = error "Property name expected"
 
 readDigit :: String -> (Int, String)
 readDigit ('0':rest) = (0, rest)
